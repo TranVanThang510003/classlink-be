@@ -1,0 +1,34 @@
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+
+# production
+/build
+/.next
+/out
+
+# misc
+.DS_Store
+*.pem
+*.log
+
+# env
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# IDE
+.idea/
+.vscode/
+# Firebase key
+firebaseAdminConfig.json
