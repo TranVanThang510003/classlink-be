@@ -3,24 +3,46 @@ const { sendAccessCode } = require("./emailService");
 
 const db = admin.firestore();
 
-// Sinh và lưu OTP vào Firestore
 const generateAndSaveOtp = async (email) => {
-  const code = Math.floor(100000 + Math.random() * 900000).toString(); // 6 chữ số
   const now = new Date();
-  const expiresAt = new Date(now.getTime() + 5 * 60 * 1000); // 5 phút sau
+  const docRef = db.collection("otpCodes").doc(email);
+  const existing = await docRef.get();
 
-  // gửi email
+  // ⚡ Nếu OTP tồn tại và chưa hết hạn → không gửi lại, chỉ báo cho user
+  if (existing.exists) {
+    const data = existing.data();
+    const expiresAt = data.expiresAt.toDate();
+
+    if (now < expiresAt) {
+      const remaining = Math.floor((expiresAt - now) / 1000);
+      return {
+        reused: true,
+        code: data.code,
+        expiresIn: remaining,
+      };
+    }
+  }
+
+  // ⚡ Nếu chưa có hoặc hết hạn → tạo mới
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
+  const expiresAt = new Date(now.getTime() + 5 * 60 * 1000); // 5 phút
+
   await sendAccessCode(email, code);
 
-  // lưu vào Firestore
-  await db.collection("otpCodes").doc(email).set({
+  await docRef.set({
     code,
     createdAt: now,
-    expiresAt
+    expiresAt,
   });
 
-  return code;
+  return {
+    reused: false,
+    code,
+    expiresIn: 300, // 5 phút
+  };
 };
+
+
 
 // Xác thực OTP
 const verifyOtp = async (email, inputCode) => {

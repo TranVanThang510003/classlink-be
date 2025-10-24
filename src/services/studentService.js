@@ -1,4 +1,4 @@
-const db = require("../config/firebase");
+const db = require("../config/firebaseAdmin");
 
 const getAllStudentService = async () => {
   try {
@@ -17,6 +17,28 @@ const getAllStudentService = async () => {
       statusCode: 500,
       message: " lỗi khi lấy danh sách students.",
     };
+  }
+};
+
+// 🔹 Lấy học sinh theo email (dùng cho OTP login)
+const getStudentByEmail = async (email) => {
+  try {
+    if (!email) return null;
+
+    const snapshot = await db
+      .collection("users")
+      .where("email", "==", email)
+      .where("role", "==", "student")
+      .limit(1)
+      .get();
+
+    if (snapshot.empty) return null;
+
+    const doc = snapshot.docs[0];
+    return { id: doc.id, ...doc.data() };
+  } catch (error) {
+    console.error("❌ Error in getStudentByEmail:", error);
+    return null;
   }
 };
 
@@ -79,6 +101,7 @@ const removeStudentService = async (id) => {
 
 module.exports = {
   getAllStudentService,
+  getStudentByEmail,
   addStudentService,
   updateStudentService,
   removeStudentService,

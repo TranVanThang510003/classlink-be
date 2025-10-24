@@ -1,7 +1,8 @@
-import admin from "firebase-admin";
-import dotenv from "dotenv";
 
-dotenv.config();
+require("dotenv").config();
+const admin = require("firebase-admin");
+
+
 
 const serviceAccount = {
   type: "service_account",
@@ -20,4 +21,5 @@ admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
 });
 
-export default admin;
+const db = admin.firestore();
+module.exports = db;
