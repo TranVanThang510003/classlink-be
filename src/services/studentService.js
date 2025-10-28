@@ -1,4 +1,5 @@
 const db = require("../config/firebaseAdmin");
+const { sendStudentAddedNotice } = require("./emailService");
 
 const getAllStudentService = async () => {
   try {
@@ -46,6 +47,9 @@ const addStudentService = async (studentData) => {
   try {
     const dataWithRole = { ...studentData, role: "student" };
     const docRef = await db.collection("users").add(dataWithRole);
+    // Gửi email thông báo
+    await sendStudentAddedNotice(studentData.email, studentData.name, studentData.className);
+
     return {
       success: true,
       statusCode: 201,
