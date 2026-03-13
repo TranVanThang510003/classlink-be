@@ -1,4 +1,4 @@
-const db = require("../config/firebaseAdmin");
+const db = require("../config/firebaseDb");
 const { sendStudentAddedNotice } = require("./emailService");
 
 const getAllStudentService = async () => {
@@ -22,26 +22,29 @@ const getAllStudentService = async () => {
 };
 
 // 🔹 Lấy học sinh theo email (dùng cho OTP login)
-const getStudentByEmail = async (email) => {
+const getUserByEmail = async (email) => {
   try {
     if (!email) return null;
 
     const snapshot = await db
       .collection("users")
       .where("email", "==", email)
-      .where("role", "==", "student")
       .limit(1)
       .get();
 
     if (snapshot.empty) return null;
 
     const doc = snapshot.docs[0];
-    return { id: doc.id, ...doc.data() };
+    return {
+      id: doc.id,
+      ...doc.data(), // có role: student | instructor
+    };
   } catch (error) {
-    console.error("❌ Error in getStudentByEmail:", error);
+    console.error("❌ Error in getUserByEmail:", error);
     return null;
   }
 };
+
 
 const addStudentService = async (studentData) => {
   try {
@@ -105,7 +108,7 @@ const removeStudentService = async (id) => {
 
 module.exports = {
   getAllStudentService,
-  getStudentByEmail,
+  getUserByEmail,
   addStudentService,
   updateStudentService,
   removeStudentService,

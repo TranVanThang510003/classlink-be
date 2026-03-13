@@ -1,37 +1,58 @@
-const jwt = require("jsonwebtoken");
-require("dotenv").config();
+const admin = require("../config/firebaseAdmin");
 
-const auth = (req, res, next) => {
-    // Các route không cần token
-    const whiteLists = [
-        "/login",
-        "/register",
-        "/send-otp",
-        "/verify-otp",
-    ];
+const auth = (requiredRole = null) => {
+    return async (req, res, next) => {
+        // ✅ Các route không cần đăng nhập
+        const whiteLists = [
+            "/login",
+            "/register",
+            "/send-otp",
+            "/verify-otp",
+        ];
 
-    const isWhiteListed = whiteLists.some((path) =>
-      req.originalUrl.startsWith("/api" + path)
-    );
+        const isWhiteListed = whiteLists.some((path) =>
+          req.originalUrl.startsWith("/api" + path)
+        );
 
-    if (isWhiteListed) return next();
+        if (isWhiteListed) return next();
 
-    // Lấy token từ header hoặc cookie
-    const authHeader = req.headers.authorization;
-    const tokenFromHeader = authHeader?.startsWith("Bearer ") ? authHeader.split(" ")[1] : null;
-    const token = tokenFromHeader || req.cookies?.token;
+        try {
+            // 🔑 Lấy Firebase ID Token
+            const authHeader = req.headers.authorization;
+            const token = authHeader?.startsWith("Bearer ")
+              ? authHeader.split("Bearer ")[1]
+              : null;
 
-    if (!token) {
-        return res.status(401).json({ message: "Token chưa được cung cấp" });
-    }
+            if (!token) {
+                return res.status(401).json({ message: "Missing Firebase token" });
+            }
 
-    try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        req.user = decoded; // Lưu thông tin người dùng để dùng tiếp
-        next();
-    } catch (err) {
-        return res.status(401).json({ message: "Token hết hạn hoặc không hợp lệ" });
-    }
+            // 🔐 Verify token bằng Firebase Admin
+            const decodedToken = await admin.auth().verifyIdToken(token);
+
+            /*
+              decodedToken sẽ có:
+              - uid
+              - email
+              - role (custom claims)
+            */
+            req.user = decodedToken;
+
+            // 🧠 Check role nếu cần
+            if (requiredRole && decodedToken.role !== requiredRole) {
+                return res.status(403).json({
+                    message: "Forbidden - insufficient permission",
+                });
+            }
+
+            next();
+        } catch (err) {
+            console.error("Auth error:", err);
+            return res.status(401).json({
+                message: "Invalid or expired Firebase token",
+            });
+        }
+    };
 };
 
 module.exports = auth;
