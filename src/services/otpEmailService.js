@@ -46,6 +46,13 @@ const generateAndSaveOtp = async (email) => {
 
 // Xác thực OTP
 const verifyOtp = async (email, inputCode) => {
+  //  DEMO MODE
+  const isDemo = process.env.DEMO_MODE === "true";
+  const demoAccounts = ["instructor@test.com", "student@test.com"];
+  if (isDemo && demoAccounts.includes(email) && inputCode === "123456") {
+    return true;
+  }
+
   const doc = await db.collection("otpCodes").doc(email).get();
   if (!doc.exists) return false;
 
